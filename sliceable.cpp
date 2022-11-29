@@ -1,4 +1,4 @@
-﻿#include "sliceable.h"
+#include "sliceable.h"
 
 Sliceable::Sliceable()
 {

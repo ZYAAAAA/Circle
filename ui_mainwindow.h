@@ -17,6 +17,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QSpacerItem>
+#include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -27,7 +28,8 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralWidget;
-    QWidget *widget_5;
+    QStackedWidget *stackedWidget_5;
+    QWidget *stackedWidget_5Page1;
     QWidget *horizontalLayoutWidget;
     QHBoxLayout *horizontalLayout_3;
     QLabel *label_2;
@@ -41,7 +43,7 @@ public:
     QWidget *layoutWidget1;
     QHBoxLayout *horizontalLayout_4;
     QHBoxLayout *horizontalLayout;
-    QPushButton *ImportButton;
+    QPushButton *pushButton;
     QPushButton *DefineButton;
     QPushButton *CalButton;
     QPushButton *SaveButton;
@@ -76,28 +78,33 @@ public:
     QLabel *mlabel_4;
     QLabel *mlabel_5;
     QSpacerItem *horizontalSpacer_6;
-    QPushButton *pushButton;
+    QPushButton *pushButton_2;
+    QPushButton *ImportButton;
+    QPushButton *pushButton_3;
+    QPushButton *pushButton_4;
+    QPushButton *pushButton_5;
 
     void setupUi(QMainWindow *MainWindow)
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QStringLiteral("MainWindow"));
         MainWindow->resize(1367, 1000);
-        MainWindow->setAcceptDrops(true);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
-        widget_5 = new QWidget(centralWidget);
-        widget_5->setObjectName(QStringLiteral("widget_5"));
-        widget_5->setGeometry(QRect(160, 170, 1051, 691));
+        stackedWidget_5 = new QStackedWidget(centralWidget);
+        stackedWidget_5->setObjectName(QStringLiteral("stackedWidget_5"));
+        stackedWidget_5->setGeometry(QRect(160, 170, 1051, 691));
         QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Ignored);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
-        sizePolicy.setHeightForWidth(widget_5->sizePolicy().hasHeightForWidth());
-        widget_5->setSizePolicy(sizePolicy);
-        widget_5->setMinimumSize(QSize(0, 410));
-        widget_5->setStyleSheet(QLatin1String(";font:15px 'Arial';color:#ffffff;\n"
+        sizePolicy.setHeightForWidth(stackedWidget_5->sizePolicy().hasHeightForWidth());
+        stackedWidget_5->setSizePolicy(sizePolicy);
+        stackedWidget_5->setMinimumSize(QSize(0, 410));
+        stackedWidget_5->setStyleSheet(QLatin1String(";font:15px 'Arial';color:#ffffff;\n"
 "background-color: rgb(194, 194, 194);"));
-        horizontalLayoutWidget = new QWidget(widget_5);
+        stackedWidget_5Page1 = new QWidget();
+        stackedWidget_5Page1->setObjectName(QStringLiteral("stackedWidget_5Page1"));
+        horizontalLayoutWidget = new QWidget(stackedWidget_5Page1);
         horizontalLayoutWidget->setObjectName(QStringLiteral("horizontalLayoutWidget"));
         horizontalLayoutWidget->setGeometry(QRect(0, 0, 1051, 587));
         horizontalLayout_3 = new QHBoxLayout(horizontalLayoutWidget);
@@ -117,7 +124,7 @@ public:
 
         horizontalLayout_3->addWidget(label_2);
 
-        layoutWidget = new QWidget(widget_5);
+        layoutWidget = new QWidget(stackedWidget_5Page1);
         layoutWidget->setObjectName(QStringLiteral("layoutWidget"));
         layoutWidget->setGeometry(QRect(0, 620, 1041, 29));
         horizontalLayout_7 = new QHBoxLayout(layoutWidget);
@@ -216,6 +223,7 @@ public:
         horizontalLayout_7->setStretch(0, 1);
         horizontalLayout_7->setStretch(1, 10);
         horizontalLayout_7->setStretch(2, 1);
+        stackedWidget_5->addWidget(stackedWidget_5Page1);
         layoutWidget1 = new QWidget(centralWidget);
         layoutWidget1->setObjectName(QStringLiteral("layoutWidget1"));
         layoutWidget1->setGeometry(QRect(110, 30, 1151, 125));
@@ -227,10 +235,10 @@ public:
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setSpacing(10);
         horizontalLayout->setObjectName(QStringLiteral("horizontalLayout"));
-        ImportButton = new QPushButton(layoutWidget1);
-        ImportButton->setObjectName(QStringLiteral("ImportButton"));
+        pushButton = new QPushButton(layoutWidget1);
+        pushButton->setObjectName(QStringLiteral("pushButton"));
 
-        horizontalLayout->addWidget(ImportButton);
+        horizontalLayout->addWidget(pushButton);
 
         DefineButton = new QPushButton(layoutWidget1);
         DefineButton->setObjectName(QStringLiteral("DefineButton"));
@@ -448,12 +456,27 @@ public:
         horizontalLayout_6->setStretch(4, 5);
         horizontalLayout_6->setStretch(5, 5);
         horizontalLayout_6->setStretch(6, 1);
-        pushButton = new QPushButton(centralWidget);
-        pushButton->setObjectName(QStringLiteral("pushButton"));
-        pushButton->setGeometry(QRect(20, 340, 75, 23));
+        pushButton_2 = new QPushButton(centralWidget);
+        pushButton_2->setObjectName(QStringLiteral("pushButton_2"));
+        pushButton_2->setGeometry(QRect(30, 480, 75, 23));
+        ImportButton = new QPushButton(centralWidget);
+        ImportButton->setObjectName(QStringLiteral("ImportButton"));
+        ImportButton->setGeometry(QRect(30, 290, 77, 23));
+        pushButton_3 = new QPushButton(centralWidget);
+        pushButton_3->setObjectName(QStringLiteral("pushButton_3"));
+        pushButton_3->setGeometry(QRect(30, 340, 75, 23));
+        pushButton_4 = new QPushButton(centralWidget);
+        pushButton_4->setObjectName(QStringLiteral("pushButton_4"));
+        pushButton_4->setGeometry(QRect(30, 410, 75, 23));
+        pushButton_5 = new QPushButton(centralWidget);
+        pushButton_5->setObjectName(QStringLiteral("pushButton_5"));
+        pushButton_5->setGeometry(QRect(30, 740, 75, 23));
         MainWindow->setCentralWidget(centralWidget);
 
         retranslateUi(MainWindow);
+
+        stackedWidget_5->setCurrentIndex(0);
+
 
         QMetaObject::connectSlotsByName(MainWindow);
     } // setupUi
@@ -463,7 +486,7 @@ public:
         MainWindow->setWindowTitle(QApplication::translate("MainWindow", "MainWindow", nullptr));
         label_2->setText(QString());
         label_layer->setText(QApplication::translate("MainWindow", "9999/9999", nullptr));
-        ImportButton->setText(QApplication::translate("MainWindow", "\345\257\274\345\205\245STL", nullptr));
+        pushButton->setText(QApplication::translate("MainWindow", "StartTest", nullptr));
         DefineButton->setText(QApplication::translate("MainWindow", "\347\241\256\345\256\232\346\210\252\351\235\242", nullptr));
         CalButton->setText(QApplication::translate("MainWindow", "\350\256\241\347\256\227\345\215\212\345\276\204", nullptr));
         SaveButton->setText(QApplication::translate("MainWindow", "\345\255\230\345\210\260\351\230\237\345\210\227", nullptr));
@@ -484,7 +507,11 @@ public:
         mlabel_3->setText(QString());
         mlabel_4->setText(QString());
         mlabel_5->setText(QString());
-        pushButton->setText(QApplication::translate("MainWindow", "Test", nullptr));
+        pushButton_2->setText(QApplication::translate("MainWindow", "Save", nullptr));
+        ImportButton->setText(QApplication::translate("MainWindow", "\345\257\274\345\205\245STL", nullptr));
+        pushButton_3->setText(QApplication::translate("MainWindow", "RO", nullptr));
+        pushButton_4->setText(QApplication::translate("MainWindow", "SL", nullptr));
+        pushButton_5->setText(QApplication::translate("MainWindow", "Debug", nullptr));
     } // retranslateUi
 
 };

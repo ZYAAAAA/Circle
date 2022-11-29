@@ -22,6 +22,7 @@ Model::~Model() //销毁对象
     for(auto& it : meshes)
     {
         delete it;
+        it = nullptr;
     }
 }
 
@@ -76,22 +77,6 @@ Mesh* Model::processMesh(aiMesh* mesh, aiMatrix4x4 model)
         }
         // 纹理坐标
         vertex.TexCoords = QVector2D(0, 0);
-        if(mesh->mTangents)
-        {
-            // tangent
-            vector.setX(mesh->mTangents[i].x);
-            vector.setY(mesh->mTangents[i].y);
-            vector.setZ(mesh->mTangents[i].z);
-            vertex.Tangent = vector;
-        }
-        // bitangent
-        if(mesh->mBitangents)
-        {
-            vector.setX(mesh->mBitangents[i].x);
-            vector.setY(mesh->mBitangents[i].y);
-            vector.setZ(mesh->mBitangents[i].z);
-            vertex.Bitangent = vector;
-        }
         m_mesh->vertices.push_back(vertex);
     }
     for(unsigned int i = 0; i < mesh->mNumFaces; i++)

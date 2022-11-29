@@ -9,7 +9,7 @@ Dia::Dia(QWidget* parent) :
     ui->multiple->setText("40");
     ui->X_num->setText("1920");
     ui->Y_num->setText("1080");
-    ui->numlayer->setText("10");
+    ui->numlayer->setText("10.0");
     ui->Radius->setText("1.5");
 }
 

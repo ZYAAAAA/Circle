@@ -11,6 +11,12 @@ Mesh::Mesh(aiMatrix4x4 model)
     }
 }
 
+Mesh::~Mesh()
+{
+    vertices.clear();
+    indices.clear();
+    model.setToIdentity();
+}
 
 
 void Mesh::dump(QVector<QVector3D>& normal, QVector<QVector3D>& vertex, float f) const
@@ -19,6 +25,7 @@ void Mesh::dump(QVector<QVector3D>& normal, QVector<QVector3D>& vertex, float f)
     vertex.clear();
     for(int i = 0; i < this->vertices.size(); i++)
     {
+        //qDebug() << vertices.at(i).Normal << vertices.at(i).Position;
         float p1, p2, p3;
         p1 = vertices.at(i).Position.x() * f;
         p2 = vertices.at(i).Position.y() * f;
@@ -30,3 +37,6 @@ void Mesh::dump(QVector<QVector3D>& normal, QVector<QVector3D>& vertex, float f)
         }
     }
 }
+
+
+

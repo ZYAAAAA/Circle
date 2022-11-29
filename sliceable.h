@@ -1,4 +1,4 @@
-﻿#ifndef SLICEABLE_H
+#ifndef SLICEABLE_H
 #define SLICEABLE_H
 
 #include <QImage>

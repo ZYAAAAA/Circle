@@ -9,8 +9,10 @@
 #include <QImageWriter>
 #include <QFutureWatcher>
 #include<QtConcurrent/QtConcurrent>
+
 #include "sliceable.h"
 #include "qmath.h"
+
 
 Slicer::Slicer()
 {
@@ -31,7 +33,8 @@ QVector<QByteArray> Slicer::resultbyte()
     wait();
     return images;
 }
-QVector<QVector<QVector2D>> Slicer::resultspot()
+
+QVector<QVector<QVector2D> > Slicer::resultspot()
 {
     wait();
     QVector<QVector<QVector2D>> tttt;
@@ -219,12 +222,26 @@ void Slicer::dispatchMLayers()
     future.waitForFinished();
     qDebug() << "processMLayer";
 }
-
-
+bool Slicer::bisclockwise(QVector<QPointF>& loop)
+{
+    QPointF p1;
+    QPointF p2;
+    float cal = 0;
+    for(int i = 0 ; i < loop.size() - 1; i++)
+    {
+        p1 = loop.at(i);
+        p2 = loop.at(i + 1);
+        cal += (p2.x() - p1.x()) * (p2.y() + p1.y());
+    }
+    p1 = loop.at(loop.size() - 1);
+    p2 = loop.at(0);
+    cal += (p2.x() - p1.x()) * (p2.y() + p1.y());
+    return (cal > 0);
+}
 void Slicer::processMLayer(struct MLayer& layer)
 {
-    //层厚LAYER.Z高度与三角形边去求交点,交到两个点即为轮廓线上的小线段
     QVector<QVector2D> spots;
+    //层厚LAYER.Z高度与三角形边去求交点,交到两个点即为轮廓线上的小线段
     QVector<Line> lines;
     for (int n : layer.index)
     {
@@ -265,29 +282,158 @@ void Slicer::processMLayer(struct MLayer& layer)
             spots.append(intersections[0]);
         }
     }
-    unsigned int xres = resolution.width();
-    unsigned int yres = resolution.height();
+    std::sort(lines.begin(), lines.end(), [](const Line & l1, const Line & l2)
+    {
+        return l1.p1.x() < l2.p1.x();
+    });
+    int num = 0;
     QImage img = QImage(resolution, QImage::Format_ARGB32);
     img.fill(Qt::black);
     QPainter painter(&img);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(Qt::white, 2));
-    //画出所有的线
-    painter.translate(xres / 2, yres / 2);
-    for(int i = 0; i < lines.size(); i++)
+    int Widthstep = img.bytesPerLine();
+    unsigned int xres = resolution.width();
+    unsigned int yres = resolution.height();
+    Pixinfo** pixinfo = new Pixinfo *[xres];
+    for (long j = 0; j < xres; j++)
     {
-        Line a =  lines.at(i);
-        painter.drawLine(QLine(a.p1.x(), a.p1.y(), a.p2.x(), a.p2.y()));
+        pixinfo[j] = new Pixinfo[yres];
+    }
+    //遍历所有的线，连成环，把每一个环渲染一个颜色，然后将颜色叠加起来
+    for (auto i = lines.begin(); i != lines.end(); i++)
+    {
+        if (i->connected)
+        {
+            continue;
+        }
+        QVector<QPointF> loop;
+        auto tail = i;
+        i->connected = true;
+        loop.append(i->p2.toPointF());
+        while (true)
+        {
+            const QVector2D p = tail->p2;
+            float min = FLT_MAX, smin = FLT_MAX;
+            QVector<Line>::iterator min_j = nullptr;
+            auto j = std::lower_bound(lines.begin(), lines.end(), p.x() - 1, [](const Line & l, const float x)
+            {
+                return l.p1.x() < x;
+            });
+            for (; j != lines.end(); j++)
+            {
+                const float dx = j->p1.x() - p.x();
+                const float dy = std::abs(j->p1.y() - p.y());
+                if (dx > 1 || dx > min)
+                {
+                    break;
+                }
+                if (dy > 1 || dy > min)
+                {
+                    continue;
+                }
+                if (j != i && j->connected)
+                {
+                    continue;
+                }
+                const float sd = dx * dx + dy * dy;
+                if (sd < smin)
+                {
+                    min_j = j;
+                    smin = sd;
+                    min = std::sqrt(smin);
+                }
+            }
+            if (min_j == nullptr || min_j == i)
+            {
+                break;
+            }
+            tail = min_j;
+            tail->connected = true;
+            loop.append(tail->p2.toPointF());
+        }
+        if (loop.size() < 3)
+        {
+            num++;
+            continue;
+        }
+        QPainterPath path;
+        path.addPolygon(QPolygonF(loop));
+        path.translate(xres / 2, yres / 2);
+        path.setFillRule(Qt::WindingFill);
+        painter.setCompositionMode(QPainter::CompositionMode_Plus);
+        if(bisclockwise(loop))//顺时针填红色
+        {
+            painter.fillPath(path, Qt::red);
+        }
+        else//逆时针填绿色
+        {
+            painter.fillPath(path, Qt::red);
+        }
+        QRectF boundex = path.boundingRect() + QMarginsF(1, 1, 1, 1);
+        int xstart = boundex.left();
+        if(xstart < 0)
+        {
+            xstart = 0;
+        }
+        int xend = boundex.right();
+        if(xend > xres)
+        {
+            xend = xres;
+        }
+        int ystart = boundex.top();
+        if(ystart < 0)
+        {
+            ystart = 0;
+        }
+        int yend = boundex.bottom();
+        if(yend > yres)
+        {
+            yend = yres;
+        }
+        QRgb pickedcolor;
+        unsigned int x, y;
+        for(y = ystart; y < yend; y++)
+        {
+            uchar* img_ptr = img.bits() + y * Widthstep;
+            for(x = xstart; x < xend; x++)
+            {
+                pickedcolor = *reinterpret_cast<QRgb*>(img_ptr + 4 * x);
+                if(qRed(pickedcolor) || qGreen((pickedcolor)))
+                {
+                    pixinfo[x][y].result.append(pickedcolor);
+                }
+            }
+        }
+        painter.setCompositionMode(QPainter::CompositionMode_Clear);
+        boundex = path.boundingRect() + QMarginsF(2, 2, 2, 2);
+        painter.fillRect(boundex, Qt::black);
     }
     painter.end();
+    img.fill(Qt::black);
+    SubtractVoidFromFill(&img, pixinfo );
+//    //清理pixinfo的内存
+    if(pixinfo != NULL)
+    {
+        for (long i = 0; i < xres; i++)
+        {
+            delete []pixinfo[i];
+        }
+        delete []pixinfo;
+        pixinfo = NULL;
+    }
+//    //镜像
     img = img.mirrored(true, false);
+    //将image数据写入slice.data
+    QBuffer buffer(&layer.data);
+    QImageWriter writer(&buffer, "png");
+    writer.setCompression(100);
+    writer.write(img);
     //将spots数据写入spotdata
     for(int i = 0; i < spots.size(); i++)
     {
         spots[i].setX(spots.at(i).x() + xres / 2);
         spots[i].setY(spots.at(i).y() + yres / 2);
         spots[i].setX(xres - spots.at(i).x());
-        //painter.drawPoint(spots[i].x(),spots[i].y());
     }
     QBuffer bufferspot(&layer.spotdata);
     QDataStream out(&bufferspot);
@@ -297,16 +443,6 @@ void Slicer::processMLayer(struct MLayer& layer)
         out << spots.at(i);
     }
     bufferspot.close();
-    QTime time;
-    time = QTime::currentTime();
-    QString strTime;
-    strTime = "E:/C++/GreyImage_demo_circle _11.25/stl/out/" + time.toString("hh_mm_ss_") + QString::number((int)QThread::currentThreadId()) + ".png";
-    img.save(strTime);
-    //将image数据写入slice.data
-    QBuffer buffer(&layer.data);
-    QImageWriter writer(&buffer, "png");
-    writer.setCompression(100);
-    writer.write(img);
 }
 
 

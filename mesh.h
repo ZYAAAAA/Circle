@@ -22,8 +22,7 @@ struct Vertex
     QVector3D Position;
     QVector3D Normal;
     QVector2D TexCoords;
-    QVector3D Tangent;
-    QVector3D Bitangent;
+
 };
 class Mesh : public Sliceable
 {
@@ -36,11 +35,10 @@ public:
     /*  函数  */
 
     Mesh(aiMatrix4x4 model);
+    ~Mesh();
     void dump(QVector<QVector3D>& normal, QVector<QVector3D>& vertex, float f) const override;
 
 private:
-
-
 
 };
 

@@ -13,7 +13,7 @@ DEPENDPATH += $$PWD/assimp
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = GreyImage
+TARGET = Gre
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -33,18 +33,18 @@ SOURCES += \
         mainwindow.cpp \
     mesh.cpp \
     model.cpp \
-    sliceable.cpp \
     slicer.cpp \
     ed.cpp \
     edcolor.cpp \
     edpf.cpp \
-    dia.cpp
+    dia.cpp \
+    myglwidget.cpp \
+    sliceable.cpp
 
 HEADERS += \
         mainwindow.h \
     mesh.h \
     model.h \
-    sliceable.h \
     slicer.h \
     ed.h \
     edcolor.h \
@@ -54,13 +54,16 @@ HEADERS += \
     reject_sharp_turn.h \
     detinflexpt.h \
     mytools.h \
-    dia.h
+    dia.h \
+    myglwidget.h \
+    sliceable.h
 
 FORMS += \
         mainwindow.ui \
     dia.ui
 
-RESOURCES +=
+RESOURCES += \
+    res.qrc
 
 DISTFILES +=
 
@@ -78,4 +81,5 @@ else:unix: LIBS += -LD:/QT/opencv/build/x64/vc15/lib/ -lopencv_world454
 
 INCLUDEPATH += $$PWD/eigen-3.4
 
-
+OTHER_FILES +=
+RC_FILE = Project.rc

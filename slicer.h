@@ -10,6 +10,7 @@
 #include <QPainterPath>
 #include <vector3.h>
 #include <QImage>
+#include <QMatrix4x4>
 
 
 class Sliceable;
@@ -39,15 +40,17 @@ private:
     int max_layer;
     QVector<struct MLayer> queue;
     QVector<QVector3D> normal, vertex;
+
     QVector<QByteArray> images;
     QVector<QByteArray> spot;
 public:
-    float f;
+    float f = 1.0f;
     float thickness = 1.0f;
     QSize resolution;
     QVector<Sliceable*> items;
     bool isBlackWhite = false;
     int threshold = 128;
+
 public:
     explicit Slicer();
     ~Slicer();
@@ -55,6 +58,7 @@ public:
     QVector<QVector<QVector2D>> resultspot();
     void fillnormalandvertex();
     void information(float f, float thickness, QSize resolution);
+    bool bisclockwise(QVector<QPointF>& loop);//是否是顺时针，顺时针填充
 protected:
     void run() override;
 private:
