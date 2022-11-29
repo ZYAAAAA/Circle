@@ -560,7 +560,7 @@ void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
         preCircles.at(k).r = mean;
         qDebug() << "-------------k << mean << num---------" << k << mean << num;
     }
-    img.save("on_pushButton_clicked.png");
+    img.save(paths + "/out/Cal_circles.png");
 }
 
 cv::Mat MainWindow::QImage2cvMat(const QImage& image)
