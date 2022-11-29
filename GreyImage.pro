@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       +=core gui opengl concurrent charts
+QT       +=core gui opengl concurrent
 
 LIBS     +=-lopengl32 -lglu32
 LIBS += -L$$PWD/assimp/lib64/ -lassimp
@@ -80,6 +80,3 @@ else:unix: LIBS += -LD:/QT/opencv/build/x64/vc15/lib/ -lopencv_world454
 
 
 INCLUDEPATH += $$PWD/eigen-3.4
-
-OTHER_FILES +=
-RC_FILE = Project.rc
