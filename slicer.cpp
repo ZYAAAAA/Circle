@@ -219,8 +219,6 @@ void Slicer::dispatchMLayers()
     future.waitForFinished();
     qDebug() << "processMLayer";
 }
-
-
 void Slicer::processMLayer(struct MLayer& layer)
 {
     //层厚LAYER.Z高度与三角形边去求交点,交到两个点即为轮廓线上的小线段
@@ -265,6 +263,10 @@ void Slicer::processMLayer(struct MLayer& layer)
             spots.append(intersections[0]);
         }
     }
+    std::sort(lines.begin(), lines.end(), [](const Line & l1, const Line & l2)
+    {
+        return l1.p1.x() < l2.p1.x();
+    });
     unsigned int xres = resolution.width();
     unsigned int yres = resolution.height();
     QImage img = QImage(resolution, QImage::Format_ARGB32);
@@ -274,11 +276,72 @@ void Slicer::processMLayer(struct MLayer& layer)
     painter.setPen(QPen(Qt::white, 2));
     //画出所有的线
     painter.translate(xres / 2, yres / 2);
-    for(int i = 0; i < lines.size(); i++)
+    for (auto i = lines.begin(); i != lines.end(); i++)
     {
-        Line a =  lines.at(i);
-        painter.drawLine(QLine(a.p1.x(), a.p1.y(), a.p2.x(), a.p2.y()));
+        if (i->connected)
+        {
+            continue;
+        }
+        QVector<QPointF> loop;
+        auto tail = i;
+        i->connected = true;
+        loop.append(i->p2.toPointF());
+        while (true)
+        {
+            const QVector2D p = tail->p2;
+            float min = FLT_MAX, smin = FLT_MAX;
+            QVector<Line>::iterator min_j = nullptr;
+            auto j = std::lower_bound(lines.begin(), lines.end(), p.x() - 1, [](const Line & l, const float x)
+            {
+                return l.p1.x() < x;
+            });
+            for (; j != lines.end(); j++)
+            {
+                const float dx = j->p1.x() - p.x();
+                const float dy = std::abs(j->p1.y() - p.y());
+                if (dx > 1 || dx > min)
+                {
+                    break;
+                }
+                if (dy > 1 || dy > min)
+                {
+                    continue;
+                }
+                if (j != i && j->connected)
+                {
+                    continue;
+                }
+                const float sd = dx * dx + dy * dy;
+                if (sd < smin)
+                {
+                    min_j = j;
+                    smin = sd;
+                    min = std::sqrt(smin);
+                }
+            }
+            if (min_j == nullptr || min_j == i)
+            {
+                break;
+            }
+            tail = min_j;
+            tail->connected = true;
+            loop.append(tail->p2.toPointF());
+        }
+        if (loop.size() < 3)
+        {
+            continue;
+        }
+        QPainterPath path;
+        path.addPolygon(QPolygonF(loop));
+        path.setFillRule(Qt::WindingFill);
+        painter.setCompositionMode(QPainter::CompositionMode_Plus);
+        painter.fillPath(path, Qt::white);
     }
+//    for(int i = 0; i < lines.size(); i++)
+//    {
+//        Line a =  lines.at(i);
+//        painter.drawLine(QLine(a.p1.x(), a.p1.y(), a.p2.x(), a.p2.y()));
+//    }
     painter.end();
     img = img.mirrored(true, false);
     //将spots数据写入spotdata
