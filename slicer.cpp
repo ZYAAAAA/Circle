@@ -300,7 +300,7 @@ void Slicer::processMLayer(struct MLayer& layer)
     QTime time;
     time = QTime::currentTime();
     QString strTime;
-    strTime = "E:/C++/GreyImage_demo_circle _11.25/stl/out/" + time.toString("hh_mm_ss_") + QString::number((int)QThread::currentThreadId()) + ".png";
+    strTime = QCoreApplication::applicationDirPath() + "/out/" + time.toString("hh_mm_ss_") + QString::number((int)QThread::currentThreadId()) + ".png";
     img.save(strTime);
     //将image数据写入slice.data
     QBuffer buffer(&layer.data);
