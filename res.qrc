@@ -3,7 +3,5 @@
         <file>stl.frag</file>
         <file>stl.vert</file>
     </qresource>
-    <qresource prefix="/">
-        <file>logo.ico</file>
-    </qresource>
+    <qresource prefix="/"/>
 </RCC>
