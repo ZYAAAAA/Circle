@@ -450,8 +450,13 @@ void miniCircle(QVector2D A, QVector2D B, QVector2D C, QVector2D& center)
 }
 double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1, double err1, float& r_x, float& r_y)
 {
+    sort(cirspot.begin(), cirspot.end(), [](QVector2D a, QVector2D b)
+    {
+        return a.x() < b.x();
+    });
     double mean = 0;
     int num = 0;
+    int i = 0;
     while(num < 1000000)
     {
         bool flag = false;
@@ -460,15 +465,14 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
 //        QVector2D A = cirspot.at(qrand() % cirspot.size());
 //        QVector2D B = cirspot.at(qrand() % cirspot.size());
 //        QVector2D C = cirspot.at(qrand() % cirspot.size());
-        int i = 0;
         QVector2D A = cirspot.at(i);
         QVector2D B = cirspot.at(i + ve_size);
         QVector2D C = cirspot.at(i + ve_size * 2);
+        i = (i + 1) % ve_size;
         QVector2D center_res;
         miniCircle(A, B, C, center_res);
         if(std::isnan(center_res.x()) | std::isnan(center_res.y()) | (distance(center_res.x(), center_res.y(), x1, y1) > qPow(err1, 2)))
         {
-            i = (i + 1) % ve_size;
             num++;
             continue;
         }
@@ -488,7 +492,7 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
                 num++;
                 if(num > 1000000)
                 {
-                    qDebug() << "num:" << num;
+                    qDebug() << "---------1000000---------";
                     return mean;
                 }
                 else
@@ -509,6 +513,11 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
             double rrr = cirspot.at(i).distanceToPoint(center_res);
             RA.append(rrr);
         }
+        sort(RA.begin(), RA.end(), less<double>());
+        for(int i = 0; i < 15; i++)
+        {
+            //qDebug() << RA.at(i);
+        }
         double sum = accumulate(RA.begin(), RA.end(), 0.0);
         mean =  sum / RA.size();
         // 求方差与标准差
@@ -519,7 +528,8 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
         }
         variance = variance / RA.size();
         double standard_deviation = sqrt(variance);
-        if(standard_deviation < 0.0001)
+        qDebug() << "standard_deviation:" << standard_deviation << "RA.size()" << RA.size();
+        if(standard_deviation < 0.1)
         {
             break;
         }
@@ -527,7 +537,7 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
         for(i = 0; i < cirspot.size(); i++)
         {
             double rrr = cirspot.at(i).distanceToPoint(center_res);
-            if(rrr - mean < 3 * standard_deviation)
+            if(abs(rrr - mean) < 3 * standard_deviation)
             {
                 REcirspot.append(cirspot.at(i));
             }
@@ -538,7 +548,12 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
         }
         if(flag)
         {
+            i = 0;
             cirspot = REcirspot;
+            sort(cirspot.begin(), cirspot.end(), [](QVector2D a, QVector2D b)
+            {
+                return a.x() < b.x();
+            });
         }
         else
         {
@@ -546,13 +561,13 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
         }
         num++;
     }
-    //qDebug() << "after size num:" << num << cirspot.size();
+    qDebug() << "num:" << num;
     return mean;
 }
 void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
 {
-    float err1 = ui->textEdit->toPlainText().toFloat() * 1.1;
-    float err2 = ui->textEdit->toPlainText().toFloat() * 0.9;
+    float err1 = ui->textEdit->toPlainText().toFloat() * 1.05;
+    float err2 = ui->textEdit->toPlainText().toFloat() * 0.95;
     QVector<QVector<QVector2D>> cirspots;
     for(int i = 0; i < preCircles.size(); i++)
     {
@@ -581,7 +596,7 @@ void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
     {
         double x1 = preCircles.at(k).xc;
         double y1 = preCircles.at(k).yc;
-        err1 = ui->textEdit->toPlainText().toFloat() * 0.1;
+        err1 = ui->textEdit->toPlainText().toFloat() * 0.03;
         float r_x = 0, r_y = 0;
         qDebug() << "-------------k << mean << preCircles---------"  << k << preCircles.at(k).r << x1 << y1;
         float mean = Deletestandard_deviation(cirspots.at(k), x1, y1, err1, r_x, r_y);
@@ -806,7 +821,7 @@ Mat MainWindow::AddAlpha(const Mat& canvas, int x)
     else
     {
         //imgpath = QFileDialog::getOpenFileName(this, tr("导入png文件"), paths, "png(*.png)");
-        imgpath = "E:/C++/build-GreyImage-Desktop_Qt_5_11_1_MSVC2017_64bit-Release/release/stl/3522.png";
+        imgpath = QCoreApplication::applicationDirPath() + "/out/3522.png";
         if(imgpath.isEmpty())
         {
             Baseimg = Mat(resolution.height(), resolution.width(), CV_8UC4, Scalar(255, 255, 255, 255));
