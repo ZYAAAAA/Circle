@@ -422,13 +422,110 @@ void miniCircle(QVector2D A, QVector2D B, QVector2D C, QVector2D& center)
     center.setX(center.x() + Xmove);
     center.setY(center.y() + Ymove);
 }
+double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1, double err1, float& r_x, float& r_y)
+{
+    double mean = 0;
+    int num = 0;
+    while(num < 1000000)
+    {
+        bool flag = false;
+        QVector<double> RA;
+        int ve_size = cirspot.size() / 3;
+//        QVector2D A = cirspot.at(qrand() % cirspot.size());
+//        QVector2D B = cirspot.at(qrand() % cirspot.size());
+//        QVector2D C = cirspot.at(qrand() % cirspot.size());
+        int i = 0;
+        QVector2D A = cirspot.at(i);
+        QVector2D B = cirspot.at(i + ve_size);
+        QVector2D C = cirspot.at(i + ve_size * 2);
+        QVector2D center_res;
+        miniCircle(A, B, C, center_res);
+        if(std::isnan(center_res.x()) | std::isnan(center_res.y()) | (distance(center_res.x(), center_res.y(), x1, y1) > qPow(err1, 2)))
+        {
+            i = (i + 1) % ve_size;
+            num++;
+            continue;
+        }
+        float res_x = center_res.x(), res_y = center_res.y();
+        for(; i < ve_size; i++)
+        {
+            //         A = cirspot.at(qrand() % cirspot.size());
+            //         B = cirspot.at(qrand() % cirspot.size());
+            //         C = cirspot.at(qrand() % cirspot.size());
+            A = cirspot.at(i);
+            B = cirspot.at((i + ve_size));
+            C = cirspot.at((i + ve_size * 2));
+            QVector2D center;
+            miniCircle(A, B, C, center);
+            if(std::isnan(center.x()) | std::isnan(center.y()) | (distance(center.x(), center.y(), x1, y1) > qPow(err1, 2)))
+            {
+                num++;
+                if(num > 1000000)
+                {
+                    qDebug() << "num:" << num;
+                    return mean;
+                }
+                else
+                {
+                    //i--;
+                    continue;
+                }
+            }
+            res_x = (res_x + center.x()) / 2.0;
+            res_y = (res_y + center.y()) / 2.0;
+        }
+        center_res.setX(res_x);
+        center_res.setY(res_y);
+        r_x = center_res.x();
+        r_y = center_res.y();
+        for(i = 0; i < cirspot.size(); i++)
+        {
+            double rrr = cirspot.at(i).distanceToPoint(center_res);
+            RA.append(rrr);
+        }
+        double sum = accumulate(RA.begin(), RA.end(), 0.0);
+        mean =  sum / RA.size();
+        // 求方差与标准差
+        double variance  = 0.0;
+        for (i = 0 ; i < RA.size() ; i++)
+        {
+            variance = variance + pow(RA.at(i) - mean, 2);
+        }
+        variance = variance / RA.size();
+        double standard_deviation = sqrt(variance);
+        qDebug() << "standard_deviation:" << standard_deviation;
+        if(standard_deviation < 0.01)
+        {
+            break;
+        }
+        QVector<QVector2D> REcirspot;
+        for(i = 0; i < cirspot.size(); i++)
+        {
+            double rrr = cirspot.at(i).distanceToPoint(center_res);
+            if(rrr - mean < 2 * standard_deviation)
+            {
+                REcirspot.append(cirspot.at(i));
+            }
+            else
+            {
+                flag = true;
+            }
+        }
+        if(flag)
+        {
+            cirspot = REcirspot;
+        }
+        else
+        {
+            break;
+        }
+        num++;
+    }
+
+    return mean;
+}
 void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
 {
-    QImage img = QImage(resolution, QImage::Format_RGB32);
-    img.fill(Qt::black);
-    QPainter painter(&img);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    //画出所有的线
     float err1 = ui->textEdit->toPlainText().toFloat() * 1.1;
     float err2 = ui->textEdit->toPlainText().toFloat() * 0.9;
     QVector<QVector<QVector2D>> cirspots;
@@ -446,6 +543,10 @@ void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
                 cirspot.append(spotbyte.at(QC.id).at(j));
             }
         }
+        sort(cirspot.begin(), cirspot.end(), [](QVector2D p1, QVector2D p2)
+        {
+            return p1.x() < p2.x();
+        });
         cirspots.append(cirspot);
     }
     QTime time;
@@ -453,114 +554,20 @@ void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
     qsrand(time.msec() + time.second() * 1000);
     for(int k = 0; k < cirspots.size(); k++)
     {
-        err1 = ui->textEdit->toPlainText().toFloat() * 0.1;
         double x1 = preCircles.at(k).xc;
         double y1 = preCircles.at(k).yc;
-        QVector<double> RA;
-        QVector2D A = cirspots.at(k).at(qrand() % cirspots.at(k).size());
-        QVector2D B = cirspots.at(k).at(qrand() % cirspots.at(k).size());
-        QVector2D C = cirspots.at(k).at(qrand() % cirspots.at(k).size());
-        QVector2D center_res;
-        miniCircle(A, B, C, center_res);
-        if(std::isnan(center_res.x()) | std::isnan(center_res.y()) | (distance(center_res.x(), center_res.y(), x1, y1) > qPow(err1, 2)))
-        {
-            k--;
-            continue;
-        }
-        float res_x = center_res.x(), res_y = center_res.y();
-        for(int i = 1; i < 100; i++)
-        {
-            A = cirspots.at(k).at(qrand() % cirspots.at(k).size());
-            B = cirspots.at(k).at(qrand() % cirspots.at(k).size());
-            C = cirspots.at(k).at(qrand() % cirspots.at(k).size());
-            QVector2D center;
-            miniCircle(A, B, C, center);
-            if(std::isnan(center.x()) | std::isnan(center.y()) | (distance(center.x(), center.y(), x1, y1) > qPow(err1, 2)))
-            {
-                i--;
-                continue;
-            }
-            res_x = (res_x + center.x()) / 2.0;
-            res_y = (res_y + center.y()) / 2.0;
-        }
-        center_res.setX(res_x);
-        center_res.setY(res_y);
-        for(int i = 0; i < cirspots.at(k).size(); i++)
-        {
-            double rrr = cirspots.at(k).at(i).distanceToPoint(center_res);
-            if(!std::isnan(rrr))
-            {
-                RA.append(rrr);
-            }
-        }
-        double sum = accumulate(RA.begin(), RA.end(), 0.0);
-        double mean =  sum / RA.size();
-        // 求方差与标准差
-        double variance  = 0.0;
-        for (uint16_t i = 0 ; i < RA.size() ; i++)
-        {
-            variance = variance + pow(RA.at(i) - mean, 2);
-        }
-        variance = variance / RA.size();
-        double standard_deviation = sqrt(variance);
-        qDebug() << "------mean << standard_deviation---------" << mean << standard_deviation;
-        int num = 0;
-        sum = 0.0;
-        if(standard_deviation > 1)
-        {
-            sort(RA.begin(), RA.end(), [](double p1, double p2)
-            {
-                return p1 < p2;
-            });
-            num = RA.size() / 10;
-            for(int i = 0; i < num; i++)
-            {
-                sum += RA.at(i);
-            }
-            mean = sum * 1.0 / (num * 1.0);
-            if(abs(mean - preCircles.at(k).r) > 5)
-            {
-                painter.setPen(QPen(Qt::blue, 5));
-                painter.drawPoint(QPointF(preCircles.at(k).xc, preCircles.at(k).yc));
-                painter.setPen(QPen(Qt::white, 5));
-                painter.drawPoint(QPointF(center_res.x(), center_res.y()));
-                painter.setPen(QPen(Qt::white, 3));
-                for(int i = 0; i < cirspots.at(k).size(); i++)
-                {
-                    painter.drawPoint(QPointF(cirspots.at(k).at(i).x(), cirspots.at(k).at(i).y()));
-                }
-            }
-        }
-        else
-        {
-            for (uint16_t i = 0 ; i < RA.size() ; i++)
-            {
-                if(pow(RA.at(i) - mean, 2) < 0.1)
-                {
-                    sum += RA.at(i);
-                    num++;
-                }
-            }
-            mean = (sum * 1.0) / (num * 1.0);
-            if(abs(mean - preCircles.at(k).r) > 5)
-            {
-                painter.setPen(QPen(Qt::blue, 5));
-                painter.drawPoint(QPointF(preCircles.at(k).xc, preCircles.at(k).yc));
-                painter.setPen(QPen(Qt::white, 5));
-                painter.drawPoint(QPointF(center_res.x(), center_res.y()));
-                painter.setPen(QPen(Qt::white, 3));
-                for(int i = 0; i < cirspots.at(k).size(); i++)
-                {
-                    painter.drawPoint(QPointF(cirspots.at(k).at(i).x(), cirspots.at(k).at(i).y()));
-                }
-            }
-        }
-        //preCircles.at(k).xc = center_res.x();
-        //preCircles.at(k).yc = center_res.y();
+        err1 = ui->textEdit->toPlainText().toFloat() * 0.1;
+        float r_x = 0, r_y = 0;
+        qDebug() << "-------------k << mean << preCircles---------"  << k << preCircles.at(k).r << x1 << y1;
+        float mean = Deletestandard_deviation(cirspots.at(k), x1, y1, err1, r_x, r_y);
         preCircles.at(k).r = mean;
-        qDebug() << "-------------k << mean << num---------" << k << mean << num;
+        if(mean != 0)
+        {
+            preCircles.at(k).xc = r_x;
+            preCircles.at(k).yc = r_y;
+        }
+        qDebug() << "-------------k << mean << preCircles---------" << k << mean << preCircles.at(k).xc << preCircles.at(k).yc;
     }
-    img.save(paths + "/out/Cal_circles.png");
 }
 
 cv::Mat MainWindow::QImage2cvMat(const QImage& image)
