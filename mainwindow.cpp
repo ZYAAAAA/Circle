@@ -12,8 +12,10 @@
 #include "edlib.h"
 #include <QBuffer>
 #include<QMimeData>
+
 using namespace cv;
 using namespace std;
+
 //内部比率阈值'T_inlier'，越大越严格。因此，要获得更多的圆圈，您可以稍微调低它。
 //锐角阈值“sharp_angle”。要检测小圆圈，您可以稍微调整一下
 typedef struct threshold
@@ -28,7 +30,6 @@ typedef struct threshold
     float sharp_angle = 60;//35 40 45 50 55 60
 
 } T;
-
 struct Queue_Circle
 {
     std::vector<MyCircles> cirdata;
@@ -36,10 +37,15 @@ struct Queue_Circle
     bool isSaved = false;
     int id = -1;
 } QC;
+
+void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg);
+QVector<QVector2D> sort_cirspot(QVector<QVector2D> cirspot, double x1, double y1);
+
 MainWindow::MainWindow(QWidget* parent):
     QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    qInstallMessageHandler(myMessageOutput);
     ui->setupUi(this);
     //.exe
     paths = QCoreApplication::applicationDirPath();
@@ -448,12 +454,15 @@ void miniCircle(QVector2D A, QVector2D B, QVector2D C, QVector2D& center)
     center.setX( center.x() + Xmove);
     center.setY( center.y() + Ymove);
 }
-double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1, double err1, float& r_x, float& r_y)
+double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1, double err1, float& r_x, float& r_y, int k)
 {
-    sort(cirspot.begin(), cirspot.end(), [](QVector2D a, QVector2D b)
-    {
-        return a.x() < b.x();
-    });
+//    QVector<QVector2D> xy_;
+//    QVector<double> RA_;
+    cirspot = sort_cirspot(cirspot, x1, y1);
+//    sort(cirspot.begin(), cirspot.end(), [](QVector2D a, QVector2D b)
+//    {
+//        return a.x() < b.x();
+//    });
     double mean = 0;
     int num = 0;
     int i = 0;
@@ -477,6 +486,7 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
             continue;
         }
         float res_x = center_res.x(), res_y = center_res.y();
+        // xy_.append(center_res);
         for(; i < ve_size; i++)
         {
             //         A = cirspot.at(qrand() % cirspot.size());
@@ -501,6 +511,7 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
                     continue;
                 }
             }
+            // xy_.append(center);
             res_x = (res_x + center.x()) / 2.0;
             res_y = (res_y + center.y()) / 2.0;
         }
@@ -514,10 +525,11 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
             RA.append(rrr);
         }
         sort(RA.begin(), RA.end(), less<double>());
-        for(int i = 0; i < 15; i++)
-        {
-            //qDebug() << RA.at(i);
-        }
+        //RA_ = RA;
+//        for(int i = 0; i < 15; i++)
+//        {
+//            //qDebug() << RA.at(i);
+//        }
         double sum = accumulate(RA.begin(), RA.end(), 0.0);
         mean =  sum / RA.size();
         // 求方差与标准差
@@ -529,7 +541,7 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
         variance = variance / RA.size();
         double standard_deviation = sqrt(variance);
         qDebug() << "standard_deviation:" << standard_deviation << "RA.size()" << RA.size();
-        if(standard_deviation < 0.1)
+        if(standard_deviation < 30)
         {
             break;
         }
@@ -548,12 +560,14 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
         }
         if(flag)
         {
+            // xy_.clear();
             i = 0;
             cirspot = REcirspot;
-            sort(cirspot.begin(), cirspot.end(), [](QVector2D a, QVector2D b)
-            {
-                return a.x() < b.x();
-            });
+            cirspot = sort_cirspot(cirspot, x1, y1);
+//            sort(cirspot.begin(), cirspot.end(), [](QVector2D a, QVector2D b)
+//            {
+//                return a.x() < b.x();
+//            });
         }
         else
         {
@@ -561,13 +575,53 @@ double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1
         }
         num++;
     }
+//    //CSV
+//    {
+//        QString m_strFilePath = QString("csv%1.csv").arg(k);
+//        // 判断文件是否不存在
+//        QFile file(m_strFilePath);
+//        if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+//        {
+//            QTextStream in(&file);
+//            QString strText("");
+//            // 文件不存在，第一次，我们就给他写个列表名字，这样csv文件打开时候查看的时候就比较清晰
+//            strText = QString("T");
+//            in << strText << ',' << mean << ',' << r_x << ',' << r_y << '\n';
+//            for(int i = 0; i < RA_.size(); i++)
+//            {
+//                in << RA_.at(i) << ',';
+//            }
+//            in << '\n';
+//            for(int i = 0; i < xy_.size(); i++)
+//            {
+//                in << xy_.at(i).x() << ',' << xy_.at(i).y() << '\n';
+//            }
+//            file.close();
+//        }
+//    }
+//    //img
+//    {
+//        QImage img = QImage(QSize(1920, 1080), QImage::Format_ARGB32);
+//        img.fill(Qt::black);
+//        QPainter painter(&img);
+//        painter.setRenderHint(QPainter::Antialiasing, true);
+//        painter.setPen(QPen(Qt::white, 2));
+//        painter.setFont(QFont("Arial", 5));
+//        for(int i = 0; i < cirspot.size(); i = i + 10)
+//        {
+//            QPointF center(cirspot.at(i).x(), cirspot.at(i).y());
+//            painter.drawText(center, QString::number(i));
+//        }
+//        painter.end();
+//        img.save(QString("%1.png").arg(k));
+//    }
     qDebug() << "num:" << num;
     return mean;
 }
 void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
 {
-    float err1 = ui->textEdit->toPlainText().toFloat() * 1.05;
-    float err2 = ui->textEdit->toPlainText().toFloat() * 0.95;
+    float err1 = ui->textEdit->toPlainText().toFloat() * 1.1;
+    float err2 = ui->textEdit->toPlainText().toFloat() * 0.9;
     QVector<QVector<QVector2D>> cirspots;
     for(int i = 0; i < preCircles.size(); i++)
     {
@@ -583,10 +637,6 @@ void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
                 cirspot.append(spotbyte.at(QC.id).at(j));
             }
         }
-        sort(cirspot.begin(), cirspot.end(), [](QVector2D p1, QVector2D p2)
-        {
-            return p1.x() < p2.x();
-        });
         cirspots.append(cirspot);
     }
     QTime time;
@@ -596,10 +646,10 @@ void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
     {
         double x1 = preCircles.at(k).xc;
         double y1 = preCircles.at(k).yc;
-        err1 = ui->textEdit->toPlainText().toFloat() * 0.03;
+        err1 = ui->textEdit->toPlainText().toFloat() * 0.3;
         float r_x = 0, r_y = 0;
-        qDebug() << "-------------k << mean << preCircles---------"  << k << preCircles.at(k).r << x1 << y1;
-        float mean = Deletestandard_deviation(cirspots.at(k), x1, y1, err1, r_x, r_y);
+//        qDebug() << "-------------k << mean << preCircles---------"  << k << preCircles.at(k).r << x1 << y1;
+        float mean = Deletestandard_deviation(cirspots.at(k), x1, y1, err1, r_x, r_y, k);
 //        QVector<double> RA;
 //        QVector2D A = cirspots.at(k).at(qrand() % cirspots.at(k).size());
 //        QVector2D B = cirspots.at(k).at(qrand() % cirspots.at(k).size());
@@ -681,7 +731,7 @@ void MainWindow::Cal_circles(std::vector<MyCircles>& preCircles)
             preCircles.at(k).xc = r_x;
             preCircles.at(k).yc = r_y;
         }
-        qDebug() << "-------------k << mean << preCircles---------" << k << mean << preCircles.at(k).xc << preCircles.at(k).yc;
+        qDebug() << "-------------k << mean << preCircles---------" << k << mean / (f * Target_radius / 3) << preCircles.at(k).xc << preCircles.at(k).yc;
     }
 }
 cv::Mat MainWindow::QImage2cvMat(const QImage& image)
@@ -741,10 +791,10 @@ QImage MainWindow::DrawCir(Mat& m)
     for (size_t i = 0; i < pcircles.size(); i++)
     {
         QPointF center(pcircles[i].xc, pcircles[i].yc);
-        double r = pcircles[i].r;
+        double r = pcircles.at(i).r;
         int pennum = 2;
         painter.setPen(Qt::blue);
-        painter.drawText(center, QString::number(r, 'f', 4));
+        painter.drawText(center, QString::number(r / (f * Target_radius / 3), 'f', 4));
         //画圆
         painter.setPen(QPen(Qt::red, pennum));
         qreal rxxx = 1.0 * r;
@@ -821,7 +871,7 @@ Mat MainWindow::AddAlpha(const Mat& canvas, int x)
     else
     {
         //imgpath = QFileDialog::getOpenFileName(this, tr("导入png文件"), paths, "png(*.png)");
-        imgpath = QCoreApplication::applicationDirPath() + "/out/3522.png";
+        imgpath = QCoreApplication::applicationDirPath() + "/in/3522.png";
         if(imgpath.isEmpty())
         {
             Baseimg = Mat(resolution.height(), resolution.width(), CV_8UC4, Scalar(255, 255, 255, 255));
@@ -1138,6 +1188,140 @@ void MainWindow::dropEvent(QDropEvent* event)   //放下事件
     tocentre();
     Show_Image();
 }
+QVector<QVector2D> sort_cirspot(QVector<QVector2D> cirspot, double x1, double y1)
+{
+    QVector<QVector2D> reQ;
+    QVector<QVector2D> c_1, c_2, c_3, c_4;
+    for(int i = 0; i < cirspot.size(); i++)
+    {
+        QVector2D Q = cirspot.at(i);
+        if(Q.x() > x1 && Q.y() > y1)
+        {
+            c_1.append(Q);
+        }
+        else if(Q.x() < x1 && Q.y() > y1)
+        {
+            c_2.append(Q);
+        }
+        else if(Q.x() < x1 && Q.y() < y1)
+        {
+            c_3.append(Q);
+        }
+        else if(Q.x() > x1 && Q.y() < y1)
+        {
+            c_4.append(Q);
+        }
+    }
+    sort(c_1.begin(), c_1.end(), [](QVector2D p1, QVector2D p2)
+    {
+        return p1.x() < p2.x();
+    });
+    sort(c_4.begin(), c_4.end(), [](QVector2D p1, QVector2D p2)
+    {
+        return p1.x() > p2.x();
+    });
+    sort(c_3.begin(), c_3.end(), [](QVector2D p1, QVector2D p2)
+    {
+        return p1.x() > p2.x();
+    });
+    sort(c_2.begin(), c_2.end(), [](QVector2D p1, QVector2D p2)
+    {
+        return p1.x() < p2.x();
+    });
+    for(int i = 0; i < c_1.size(); i++)
+    {
+        reQ.append(c_1.at(i));
+    }
+    for(int i = 0; i < c_4.size(); i++)
+    {
+        reQ.append(c_4.at(i));
+    }
+    for(int i = 0; i < c_3.size(); i++)
+    {
+        reQ.append(c_3.at(i));
+    }
+    for(int i = 0; i < c_2.size(); i++)
+    {
+        reQ.append(c_2.at(i));
+    }
+    return reQ;
+}
 void MainWindow::on_pushButton_clicked()
 {
+    std::vector<MyCircles> preCircles = QC.cirdata;
+    float err1 = ui->textEdit->toPlainText().toFloat() * 1.1;
+    float err2 = ui->textEdit->toPlainText().toFloat() * 0.9;
+    QVector<QVector<QVector2D>> cirspots;
+    for(int i = 0; i < preCircles.size(); i++)
+    {
+        QVector<QVector2D> cirspot;
+        double x1 = preCircles.at(i).xc;
+        double y1 = preCircles.at(i).yc;
+        for(int j = 0; j < spotbyte.at(QC.id).size(); j++)
+        {
+            double x2 = spotbyte.at(QC.id).at(j).x();
+            double y2 = spotbyte.at(QC.id).at(j).y();
+            if(distance(x1, y1, x2, y2) < qPow(err1, 2) && distance(x1, y1, x2, y2) > qPow(err2, 2))
+            {
+                cirspot.append(spotbyte.at(QC.id).at(j));
+            }
+        }
+        cirspots.append(cirspot);
+    }
+    QTime time;
+    time = QTime::currentTime();
+    qsrand(time.msec() + time.second() * 1000);
+    for(int k = 0; k < cirspots.size(); k++)
+        // int k = 2;
+    {
+        double x1 = preCircles.at(k).xc;
+        double y1 = preCircles.at(k).yc;
+        err1 = ui->textEdit->toPlainText().toFloat() * 1;
+        float r_x = 0, r_y = 0;
+        //qDebug() << "-------------k << mean << preCircles---------"  << k << preCircles.at(k).r << x1 << y1;
+        float mean = Deletestandard_deviation(cirspots.at(k), x1, y1, err1, r_x, r_y, k);
+        preCircles.at(k).r = mean;
+        if(mean != 0)
+        {
+            preCircles.at(k).xc = r_x;
+            preCircles.at(k).yc = r_y;
+        }
+        qDebug() << "-------------k << mean << preCircles---------" << k << mean / (f * Target_radius / 3) << preCircles.at(k).xc << preCircles.at(k).yc;
+    }
+}
+void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
+{
+    static QMutex mutex;
+    mutex.lock();
+    QByteArray localMsg = msg.toLocal8Bit();
+    QString strMsg("");
+    switch(type)
+    {
+        case QtDebugMsg:
+            strMsg = QString("Debug:");
+            break;
+        case QtWarningMsg:
+            strMsg = QString("Warning:");
+            break;
+        case QtCriticalMsg:
+            strMsg = QString("Critical:");
+            break;
+        case QtFatalMsg:
+            strMsg = QString("Fatal:");
+            break;
+    }
+    // 设置输出信息格式
+    // QString strDateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss ddd");
+    //  QString strMessage = QString("Message:%1 File:%2  Line:%3  Function:%4  DateTime:%5")
+    //                       .arg(localMsg.constData()).arg(context.file).arg(context.line).arg(context.function).arg(strDateTime);
+    QString strMessage = QString("Message:%1 ").arg(localMsg.constData());
+    // 输出信息至文件中（读写、追加形式）
+    QFile file("log.txt");
+    file.open(QIODevice::ReadWrite | QIODevice::Append);
+    QTextStream stream(&file);
+    stream << strMessage << "\r\n";
+    file.flush();
+    file.close();
+    // 解锁
+    mutex.unlock();
 }

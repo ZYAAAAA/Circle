@@ -18,6 +18,7 @@
 #include <QTextCodec>
 #include <QTimer>
 #include <QTime>
+#include <QMutex>
 
 
 #include <assimp/Importer.hpp>
