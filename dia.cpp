@@ -11,6 +11,8 @@ Dia::Dia(QWidget* parent) :
     ui->Y_num->setText("1080");
     ui->numlayer->setText("10");
     ui->Radius->setText("1.5");
+    ui->radioCircle->setChecked(1);
+    isCircle = true;
 }
 
 Dia::~Dia()
@@ -31,4 +33,14 @@ void Dia::on_OKButton_clicked()
 void Dia::on_CButton_clicked()
 {
     QDialog::reject();
+}
+
+void Dia::on_radioCircle_clicked()
+{
+    isCircle = true;
+}
+
+void Dia::on_radioLine_clicked()
+{
+    isCircle = false;
 }

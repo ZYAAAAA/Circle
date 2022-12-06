@@ -48,13 +48,14 @@ public:
     QVector<Sliceable*> items;
     bool isBlackWhite = false;
     int threshold = 128;
+    bool isCircle;
 public:
     explicit Slicer();
     ~Slicer();
     QVector<QByteArray> resultbyte();
     QVector<QVector<QVector2D>> resultspot();
     void fillnormalandvertex();
-    void information(float f, float thickness, QSize resolution);
+    void information(float f, float thickness, QSize resolution, bool isCircle);
 protected:
     void run() override;
 private:

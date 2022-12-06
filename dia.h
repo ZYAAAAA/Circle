@@ -19,10 +19,14 @@ public:
     float mlayer;
     float radius;
     int x, y;
+    bool isCircle;
 private slots:
     void on_OKButton_clicked();
-
     void on_CButton_clicked();
+
+    void on_radioCircle_clicked();
+
+    void on_radioLine_clicked();
 
 private:
     Ui::Dia* ui;

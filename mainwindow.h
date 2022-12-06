@@ -66,10 +66,11 @@ public:
     std::vector<MyCircles> Sort_circles(std::vector<MyCircles>& preCircles);
     void Cal_circles(std::vector<MyCircles>& preCircles);
     void tocentre();
-    float normalize(float input);
+    float normalize(float input, float mid);
     Mat AddAlpha(const Mat&, int);
     std::vector<MyCircles> Processing_concentriccircles(std::vector<MyCircles>& preCircles, bool isGray);
     std::vector<MyCircles> DeleteSmallCircle(std::vector<MyCircles>& preCircles);
+    double Deletestandard_deviation(QVector<QVector2D> cirspot, double x1, double y1, double err1, float& r_x, float& r_y, int k);
 
     void dragEnterEvent(QDragEnterEvent* event); //拖动进入事件
     void dropEvent(QDropEvent* event);

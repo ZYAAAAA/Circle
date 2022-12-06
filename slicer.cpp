@@ -66,11 +66,12 @@ void Slicer::fillnormalandvertex()
     vertex.detach();
 }
 
-void Slicer::information(float f, float thickness, QSize resolution)
+void Slicer::information(float f, float thickness, QSize resolution, bool isCircle)
 {
     this->thickness = thickness;
     this->resolution = resolution;
     this->f = f;
+    this->isCircle = isCircle;
 }
 
 void Slicer::run()
@@ -274,74 +275,80 @@ void Slicer::processMLayer(struct MLayer& layer)
     QPainter painter(&img);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setPen(QPen(Qt::white, 2));
-    //画出所有的线
     painter.translate(xres / 2, yres / 2);
-    for (auto i = lines.begin(); i != lines.end(); i++)
+    if(isCircle)
     {
-        if (i->connected)
+        //画出所有的圆
+        for (auto i = lines.begin(); i != lines.end(); i++)
         {
-            continue;
-        }
-        QVector<QPointF> loop;
-        auto tail = i;
-        i->connected = true;
-        loop.append(i->p2.toPointF());
-        while (true)
-        {
-            const QVector2D p = tail->p2;
-            float min = FLT_MAX, smin = FLT_MAX;
-            QVector<Line>::iterator min_j = nullptr;
-            auto j = std::lower_bound(lines.begin(), lines.end(), p.x() - 1, [](const Line & l, const float x)
+            if (i->connected)
             {
-                return l.p1.x() < x;
-            });
-            for (; j != lines.end(); j++)
+                continue;
+            }
+            QVector<QPointF> loop;
+            auto tail = i;
+            i->connected = true;
+            loop.append(i->p2.toPointF());
+            while (true)
             {
-                const float dx = j->p1.x() - p.x();
-                const float dy = std::abs(j->p1.y() - p.y());
-                if (dx > 1 || dx > min)
+                const QVector2D p = tail->p2;
+                float min = FLT_MAX, smin = FLT_MAX;
+                QVector<Line>::iterator min_j = nullptr;
+                auto j = std::lower_bound(lines.begin(), lines.end(), p.x() - 1, [](const Line & l, const float x)
+                {
+                    return l.p1.x() < x;
+                });
+                for (; j != lines.end(); j++)
+                {
+                    const float dx = j->p1.x() - p.x();
+                    const float dy = std::abs(j->p1.y() - p.y());
+                    if (dx > 1 || dx > min)
+                    {
+                        break;
+                    }
+                    if (dy > 1 || dy > min)
+                    {
+                        continue;
+                    }
+                    if (j != i && j->connected)
+                    {
+                        continue;
+                    }
+                    const float sd = dx * dx + dy * dy;
+                    if (sd < smin)
+                    {
+                        min_j = j;
+                        smin = sd;
+                        min = std::sqrt(smin);
+                    }
+                }
+                if (min_j == nullptr || min_j == i)
                 {
                     break;
                 }
-                if (dy > 1 || dy > min)
-                {
-                    continue;
-                }
-                if (j != i && j->connected)
-                {
-                    continue;
-                }
-                const float sd = dx * dx + dy * dy;
-                if (sd < smin)
-                {
-                    min_j = j;
-                    smin = sd;
-                    min = std::sqrt(smin);
-                }
+                tail = min_j;
+                tail->connected = true;
+                loop.append(tail->p2.toPointF());
             }
-            if (min_j == nullptr || min_j == i)
+            if (loop.size() < 3)
             {
-                break;
+                continue;
             }
-            tail = min_j;
-            tail->connected = true;
-            loop.append(tail->p2.toPointF());
+            QPainterPath path;
+            path.addPolygon(QPolygonF(loop));
+            path.setFillRule(Qt::WindingFill);
+            painter.setCompositionMode(QPainter::CompositionMode_Plus);
+            painter.fillPath(path, Qt::white);
         }
-        if (loop.size() < 3)
-        {
-            continue;
-        }
-        QPainterPath path;
-        path.addPolygon(QPolygonF(loop));
-        path.setFillRule(Qt::WindingFill);
-        painter.setCompositionMode(QPainter::CompositionMode_Plus);
-        painter.fillPath(path, Qt::white);
     }
-//    for(int i = 0; i < lines.size(); i++)
-//    {
-//        Line a =  lines.at(i);
-//        painter.drawLine(QLine(a.p1.x(), a.p1.y(), a.p2.x(), a.p2.y()));
-//    }
+    else
+    {
+        for(int i = 0; i < lines.size(); i++)
+        {
+            Line a =  lines.at(i);
+            painter.drawLine(QLine(a.p1.x(), a.p1.y(), a.p2.x(), a.p2.y()));
+        }
+    }
     painter.end();
     img = img.mirrored(true, false);
     //将spots数据写入spotdata
@@ -363,7 +370,7 @@ void Slicer::processMLayer(struct MLayer& layer)
     QTime time;
     time = QTime::currentTime();
     QString strTime;
-    strTime = QCoreApplication::applicationDirPath() + "/out/" + time.toString("hh_mm_ss_") + QString::number((int)QThread::currentThreadId()) + ".png";
+    strTime = QCoreApplication::applicationDirPath() + "/slice/" + time.toString("hh_mm_ss_") + QString::number((int)QThread::currentThreadId()) + ".png";
     img.save(strTime);
     //将image数据写入slice.data
     QBuffer buffer(&layer.data);
